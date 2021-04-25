@@ -1,12 +1,12 @@
 version: '3'
 
 networks:
-  laravel:
+  backend:
 
 services:
   nginx:
     image: nginx:stable-alpine
-    container_name: nginx_backend
+    container_name: rcf-nginx
     ports:
       - "8000:80"
     volumes:
@@ -16,13 +16,15 @@ services:
       - php
       - mysql
     networks:
-      - laravel
+      - backend
 
   mysql:
-    image: mysql:5.7.29
-    container_name: mysql_backend
+    image: mysql:8.0
+    container_name: rcf-mysql
     restart: unless-stopped
     tty: true
+    volumes:
+      - ./mysql:/var/lib/mysql
     ports:
       - "3306:3306"
     environment:
@@ -33,52 +35,44 @@ services:
       SERVICE_TAGS: dev
       SERVICE_NAME: mysql
     networks:
-      - laravel
-  redis:
-    image: "redis:alpine"
-    container_name: redis_backend
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    networks:
-      - laravel
+      - backend
+#  redis:
+#    image: "redis:alpine"
+#    container_name: rcf-redis
+#    restart: unless-stopped
+#    ports:
+#      - "6379:6379"
+#    networks:
+#      - backend
 
   php:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: php_backend
+    container_name: rcf-php
     volumes:
       - ./src:/var/www/html
     ports:
       - "9000:9000"
     networks:
-      - laravel
+      - backend
 
   composer:
     image: composer:latest
-    container_name: composer_backend
+    container_name: rcf-composer
     volumes:
       - ./src:/var/www/html
     working_dir: /var/www/html
     depends_on:
       - php
     networks:
-      - laravel
-
-  npm:
-    image: node:13.7
-    container_name: npm_backend
-    volumes:
-      - ./src:/var/www/html
-    working_dir: /var/www/html
-    entrypoint: ['npm']
+      - backend
 
   artisan:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: artisan_backend
+    container_name: rcf-artisan
     volumes:
       - ./src:/var/www/html
     depends_on:
@@ -86,4 +80,4 @@ services:
     working_dir: /var/www/html
     entrypoint: ['/var/www/html/artisan']
     networks:
-      - laravel
+      - backend
